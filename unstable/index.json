@@ -1,0 +1,21 @@
+{
+  "name": "unstable",
+  "description": "Altair Linux package repository",
+  "last_updated": "2026-03-14T23:38:11.020173100+00:00",
+  "packages": [
+    {
+      "name": "nano",
+      "version": "7.2.0",
+      "architecture": "x86_64",
+      "description": "GNU nano text editor",
+      "dependencies": [],
+      "conflicts": [],
+      "provides": [],
+      "checksum": "2ca8ceef82a1fde5094430d7e17e9e98c6eae75ae9a3f6a7205bd67cbef92c66",
+      "filename": "nano-7.2.0-x86_64.astpkg",
+      "size": 562,
+      "license": "ZPL-2.0",
+      "maintainer": "Altair Linux <contact@altairlinux.org>"
+    }
+  ]
+}

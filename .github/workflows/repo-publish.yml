@@ -1,0 +1,49 @@
+name: Repository Publish
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'stable/**'
+      - 'testing/**'
+      - 'unstable/**'
+      - 'keys/**'
+      - '.github/workflows/repo-publish.yml'
+  workflow_dispatch:
+
+jobs:
+  validate-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate repository structure
+        shell: bash
+        run: |
+          set -euo pipefail
+          for channel in stable testing unstable; do
+            test -d "$channel/packages"
+          done
+          test -d keys
+
+      - name: Validate repository integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          for channel in stable testing unstable; do
+            if [[ -f "$channel/index.json" ]]; then
+              jq -e . "$channel/index.json" > /dev/null
+            fi
+          done
+
+      - name: Publish repository artifact bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: altair-repository
+          path: |
+            stable/**
+            testing/**
+            unstable/**
+            keys/**

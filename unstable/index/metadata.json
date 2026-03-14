@@ -1,0 +1,5 @@
+{
+  "channel": "unstable",
+  "index_file": "../index.json",
+  "signing_key": "../../keys/repo.pub"
+}

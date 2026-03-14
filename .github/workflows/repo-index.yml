@@ -1,0 +1,65 @@
+name: Repository Index
+
+on:
+  push:
+    paths:
+      - 'stable/packages/**'
+      - 'testing/packages/**'
+      - 'unstable/packages/**'
+      - '.github/workflows/repo-index.yml'
+  pull_request:
+    paths:
+      - 'stable/packages/**'
+      - 'testing/packages/**'
+      - 'unstable/packages/**'
+      - '.github/workflows/repo-index.yml'
+  workflow_dispatch:
+
+jobs:
+  update-index:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Checkout Astra
+        uses: actions/checkout@v4
+        with:
+          repository: Altair-Linux/Astra
+          path: Astra
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Build Astra binary
+        working-directory: Astra
+        run: cargo build -p astra
+
+      - name: Generate channel indices
+        shell: bash
+        run: |
+          set -euo pipefail
+          for channel in stable testing unstable; do
+            mkdir -p "$channel/packages"
+            Astra/target/debug/astra repo update "$channel"
+            test -f "$channel/index.json"
+          done
+
+      - name: Validate index JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          for channel in stable testing unstable; do
+            jq -e . "$channel/index.json" > /dev/null
+          done
+
+      - name: Upload index artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: channel-indexes
+          path: |
+            stable/index.json
+            testing/index.json
+            unstable/index.json
