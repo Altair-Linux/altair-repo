@@ -22,28 +22,44 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Checkout Astra
-        uses: actions/checkout@v4
-        with:
-          repository: Altair-Linux/Astra
-          path: Astra
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@v1
-        with:
-          toolchain: stable
-
-      - name: Build Astra binary
-        working-directory: Astra
-        run: cargo build -p astra
-
       - name: Generate channel indices
         shell: bash
         run: |
           set -euo pipefail
           for channel in stable testing unstable; do
             mkdir -p "$channel/packages"
-            Astra/target/debug/astra repo update "$channel"
+            pkgs_json="[]"
+            shopt -s nullglob
+            for file in "$channel"/packages/*.astpkg; do
+              base=$(basename "$file")
+              size=$(stat -c%s "$file")
+              checksum=$(sha256sum "$file" | awk '{print $1}')
+
+              stem="${base%.astpkg}"
+              arch="${stem##*-}"
+              rest="${stem%-*}"
+              version="${rest##*-}"
+              name="${rest%-*}"
+
+              entry=$(jq -n \
+                --arg name "$name" \
+                --arg version "$version" \
+                --arg arch "$arch" \
+                --arg checksum "$checksum" \
+                --arg filename "$base" \
+                --argjson size "$size" \
+                '{name:$name,version:$version,architecture:$arch,description:"",dependencies:[],conflicts:[],provides:[],checksum:$checksum,filename:$filename,size:$size,license:"",maintainer:""}')
+
+              pkgs_json=$(jq -c --argjson entry "$entry" '. + [$entry]' <<< "$pkgs_json")
+            done
+
+            jq -n \
+              --arg name "$channel" \
+              --arg description "Altair Linux package repository" \
+              --arg updated "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+              --argjson packages "$pkgs_json" \
+              '{name:$name,description:$description,last_updated:$updated,packages:$packages}' \
+              > "$channel/index.json"
             test -f "$channel/index.json"
           done
 
