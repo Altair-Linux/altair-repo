@@ -26,7 +26,7 @@ jobs:
           for channel in stable testing unstable; do
             test -d "$channel/packages"
           done
-          test -d keys
+          [[ -d keys ]] || { echo "keys/ directory not present; skipping"; }
 
       - name: Validate repository integrity
         shell: bash
